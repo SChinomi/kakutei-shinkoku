@@ -1,13 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { login } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth";
+
+const SESSION_COOKIE = "ks_session";
+const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 export async function POST(request: NextRequest) {
   const { password } = await request.json();
-  const success = await login(password);
+  const correct = process.env.AUTH_PASSWORD;
 
-  if (!success) {
+  if (!correct) {
+    return NextResponse.json({ ok: true });
+  }
+
+  if (password !== correct) {
     return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
 
-  return NextResponse.json({ ok: true });
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set(SESSION_COOKIE, hashPassword(correct), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    maxAge: SESSION_MAX_AGE,
+    path: "/",
+  });
+
+  return response;
 }
