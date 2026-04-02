@@ -8,6 +8,7 @@ import {
   numeric,
   boolean,
   uniqueIndex,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 // 事業体（個人事業、法人など）
@@ -66,6 +67,20 @@ export const transactions = pgTable(
     ),
   ]
 );
+
+// レシート（Google Drive保存のスキャン画像）
+export const receipts = pgTable("receipts", {
+  id: serial("id").primaryKey(),
+  entityId: integer("entity_id")
+    .references(() => entities.id)
+    .notNull(),
+  driveFileId: text("drive_file_id").notNull(),
+  driveUrl: text("drive_url").notNull(),
+  fileName: text("file_name").notNull(),
+  scanDate: date("scan_date").notNull(), // スキャン対象月 e.g. 2026-01
+  ocrResults: jsonb("ocr_results"), // [{date, store, amount, matched_transaction_id}]
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 // アップロード履歴
 export const uploads = pgTable("uploads", {

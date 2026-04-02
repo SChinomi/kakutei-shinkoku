@@ -59,6 +59,19 @@ export async function POST() {
   `);
 
   await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS receipts (
+      id SERIAL PRIMARY KEY,
+      entity_id INTEGER NOT NULL REFERENCES entities(id),
+      drive_file_id TEXT NOT NULL,
+      drive_url TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      scan_date DATE NOT NULL,
+      ocr_results JSONB,
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )
+  `);
+
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS uploads (
       id SERIAL PRIMARY KEY,
       batch_id TEXT NOT NULL UNIQUE,
