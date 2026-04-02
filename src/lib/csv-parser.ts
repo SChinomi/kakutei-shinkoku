@@ -75,7 +75,17 @@ export function parseCSV(
 
     if (fields.length < 3) continue; // skip malformed lines
 
-    const dateStr = parseDate(fields[format.dateColumn] || "");
+    let dateStr: string;
+    if (format.dateMonthColumn !== undefined && format.dateDayColumn !== undefined) {
+      // 年・月・日が別カラム
+      const y = (fields[format.dateColumn] || "").trim();
+      const m = (fields[format.dateMonthColumn] || "").trim();
+      const d = (fields[format.dateDayColumn] || "").trim();
+      if (!y || !m || !d) continue;
+      dateStr = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    } else {
+      dateStr = parseDate(fields[format.dateColumn] || "");
+    }
     const description = (
       fields[format.descriptionColumn] || ""
     ).trim();

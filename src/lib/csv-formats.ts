@@ -13,7 +13,9 @@ export interface CSVFormat {
   encoding: "utf-8" | "shift_jis";
   hasHeader: boolean;
   // 列マッピング
-  dateColumn: number;
+  dateColumn: number; // 日付列（YYYY/MM/DD形式の場合）
+  dateMonthColumn?: number; // 月列（年月日が分割されている場合）
+  dateDayColumn?: number; // 日列（年月日が分割されている場合）
   descriptionColumn: number;
   amountColumn?: number; // カード明細: 単一金額列
   withdrawalColumn?: number; // 銀行: 出金列
@@ -33,12 +35,14 @@ export const CSV_FORMATS: CSVFormat[] = [
     type: "bank",
     encoding: "shift_jis",
     hasHeader: true,
-    dateColumn: 0,
-    descriptionColumn: 1,
-    withdrawalColumn: 2,
-    depositColumn: 3,
-    balanceColumn: 4,
-    memoColumn: 5,
+    dateColumn: 0, // 年
+    dateMonthColumn: 1, // 月
+    dateDayColumn: 2, // 日
+    descriptionColumn: 7, // 摘要
+    withdrawalColumn: 8, // お支払金額
+    depositColumn: 9, // お預り金額
+    balanceColumn: 10, // 残高
+    memoColumn: 11, // メモ
   },
   {
     id: "amex",
