@@ -31,15 +31,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Read file content
+  // Read file content — auto-detect encoding
   let content: string;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  if (format.encoding === "shift_jis") {
+  // Try UTF-8 first (already converted files), fall back to Shift-JIS
+  const utf8 = buffer.toString("utf-8");
+  if (utf8.includes("\ufffd") || (!utf8.includes(",") && buffer.length > 10)) {
+    // Likely Shift-JIS: decode properly
     const decoder = new TextDecoder("shift_jis");
     content = decoder.decode(buffer);
   } else {
-    content = buffer.toString("utf-8");
+    content = utf8;
   }
 
   // Parse CSV
