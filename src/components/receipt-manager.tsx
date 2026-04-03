@@ -5,6 +5,9 @@ import { useState, useEffect, useCallback } from "react";
 interface MatchCandidate {
   transaction_id: number;
   score: number;
+  date_score?: number;
+  amount_score?: number;
+  store_score?: number;
   date: string;
   description: string;
   amount: string;
@@ -44,11 +47,9 @@ export function ReceiptManager() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  // Filters
   const [filterEntityId, setFilterEntityId] = useState("");
   const [filterScanDate, setFilterScanDate] = useState("");
 
-  // Registration form
   const [showForm, setShowForm] = useState(false);
   const [formEntityId, setFormEntityId] = useState("");
   const [formDriveInput, setFormDriveInput] = useState("");
@@ -56,8 +57,8 @@ export function ReceiptManager() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
-  // Google Drive receipt folder — loaded from env at build time
-  const DRIVE_FOLDER_URL = process.env.NEXT_PUBLIC_DRIVE_RECEIPT_FOLDER_URL || "";
+  const DRIVE_FOLDER_URL =
+    process.env.NEXT_PUBLIC_DRIVE_RECEIPT_FOLDER_URL || "";
 
   const fetchEntities = useCallback(async () => {
     const res = await fetch("/api/entities");
@@ -69,7 +70,6 @@ export function ReceiptManager() {
     const params = new URLSearchParams();
     if (filterEntityId) params.set("entityId", filterEntityId);
     if (filterScanDate) params.set("scanDate", filterScanDate);
-
     const res = await fetch(`/api/receipts?${params}`);
     if (res.ok) {
       const data = await res.json();
@@ -81,7 +81,6 @@ export function ReceiptManager() {
   useEffect(() => {
     fetchEntities();
   }, [fetchEntities]);
-
   useEffect(() => {
     fetchReceipts();
   }, [fetchReceipts]);
@@ -96,7 +95,6 @@ export function ReceiptManager() {
     e.preventDefault();
     setSubmitting(true);
     setUploadError("");
-
     try {
       const driveFileId = parseDriveFileId(formDriveInput);
       const res = await fetch("/api/receipts", {
@@ -109,7 +107,6 @@ export function ReceiptManager() {
           scanDate: new Date().toISOString().slice(0, 10),
         }),
       });
-
       if (res.ok) {
         setFormDriveInput("");
         setFormFileName("");
@@ -129,9 +126,7 @@ export function ReceiptManager() {
     const res = await fetch(`/api/receipts/${receiptId}/match`, {
       method: "POST",
     });
-    if (res.ok) {
-      fetchReceipts();
-    }
+    if (res.ok) fetchReceipts();
   }
 
   async function handleConfirm(
@@ -142,15 +137,12 @@ export function ReceiptManager() {
   ) {
     const body: Record<string, unknown> = { itemIndex, status };
     if (transactionId) body.transactionId = transactionId;
-
     const res = await fetch(`/api/receipts/${receiptId}/confirm`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (res.ok) {
-      fetchReceipts();
-    }
+    if (res.ok) fetchReceipts();
   }
 
   async function handleBatchConfirm(receipt: Receipt) {
@@ -159,24 +151,22 @@ export function ReceiptManager() {
       .map((item, i) => ({ itemIndex: i, item }))
       .filter(
         ({ item }) =>
-          item.matched_transaction_id && item.status !== "confirmed" && item.status !== "rejected"
+          item.matched_transaction_id &&
+          item.status !== "confirmed" &&
+          item.status !== "rejected"
       )
       .map(({ itemIndex, item }) => ({
         itemIndex,
         status: "confirmed" as const,
         transactionId: item.matched_transaction_id!,
       }));
-
     if (items.length === 0) return;
-
     const res = await fetch(`/api/receipts/${receipt.id}/confirm`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items }),
     });
-    if (res.ok) {
-      fetchReceipts();
-    }
+    if (res.ok) fetchReceipts();
   }
 
   function ocrSummary(ocrResults: OcrItem[] | null) {
@@ -186,7 +176,10 @@ export function ReceiptManager() {
     const confirmed = ocrResults.filter((r) => r.status === "confirmed").length;
     const rejected = ocrResults.filter((r) => r.status === "rejected").length;
     const pendingWithMatch = ocrResults.filter(
-      (r) => r.matched_transaction_id && r.status !== "confirmed" && r.status !== "rejected"
+      (r) =>
+        r.matched_transaction_id &&
+        r.status !== "confirmed" &&
+        r.status !== "rejected"
     ).length;
     return { total: ocrResults.length, matched, confirmed, rejected, pendingWithMatch };
   }
@@ -204,9 +197,7 @@ export function ReceiptManager() {
           >
             <option value="">すべて</option>
             {entities.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-              </option>
+              <option key={e.id} value={e.id}>{e.name}</option>
             ))}
           </select>
         </div>
@@ -250,7 +241,6 @@ export function ReceiptManager() {
               </a>
             )}
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">事業体</label>
@@ -262,16 +252,12 @@ export function ReceiptManager() {
               >
                 <option value="">選択...</option>
                 {entities.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name}
-                  </option>
+                  <option key={e.id} value={e.id}>{e.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">
-                Drive URL / ファイルID
-              </label>
+              <label className="block text-xs text-gray-500 mb-1">Drive URL / ファイルID</label>
               <input
                 type="text"
                 value={formDriveInput}
@@ -293,11 +279,7 @@ export function ReceiptManager() {
               />
             </div>
           </div>
-
-          {uploadError && (
-            <p className="text-xs text-red-600">{uploadError}</p>
-          )}
-
+          {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
           <div className="flex justify-end">
             <button
               type="submit"
@@ -318,64 +300,56 @@ export function ReceiptManager() {
           レシートがありません。「レシート登録」から追加してください。
         </p>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-4 py-2 font-medium text-gray-600">
-                  ファイル名
-                </th>
-                <th className="text-left px-4 py-2 font-medium text-gray-600">
-                  事業体
-                </th>
-                <th className="text-left px-4 py-2 font-medium text-gray-600">
-                  スキャン月
-                </th>
-                <th className="text-left px-4 py-2 font-medium text-gray-600">
-                  OCR
-                </th>
-                <th className="text-left px-4 py-2 font-medium text-gray-600">
-                  確認状況
-                </th>
-                <th className="text-left px-4 py-2 font-medium text-gray-600">
-                  操作
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {receipts.map((r) => {
-                const summary = ocrSummary(r.ocrResults);
-                const isExpanded = expandedId === r.id;
-                return (
-                  <ReceiptRow
-                    key={r.id}
-                    receipt={r}
-                    summary={summary}
-                    isExpanded={isExpanded}
-                    onToggle={() => setExpandedId(isExpanded ? null : r.id)}
-                    onMatch={() => handleMatch(r.id)}
-                    onConfirm={(idx, status, txnId) =>
-                      handleConfirm(r.id, idx, status, txnId)
-                    }
-                    onBatchConfirm={() => handleBatchConfirm(r)}
-                  />
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-3">
+          {receipts.map((r) => {
+            const summary = ocrSummary(r.ocrResults);
+            const isExpanded = expandedId === r.id;
+            return (
+              <ReceiptCard
+                key={r.id}
+                receipt={r}
+                summary={summary}
+                isExpanded={isExpanded}
+                onToggle={() => setExpandedId(isExpanded ? null : r.id)}
+                onMatch={() => handleMatch(r.id)}
+                onConfirm={(idx, status, txnId) =>
+                  handleConfirm(r.id, idx, status, txnId)
+                }
+                onBatchConfirm={() => handleBatchConfirm(r)}
+              />
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
+// --- Sub-components ---
+
+function ScoreBreakdown({ c }: { c: MatchCandidate }) {
+  if (c.date_score === undefined) return <ScoreBadge score={c.score} />;
+  return (
+    <span className="inline-flex items-center gap-1 text-xs">
+      <ScoreBadge score={c.score} />
+      <span className="text-gray-400" title="日付/金額/店名">
+        ({c.date_score}/{c.amount_score}/{c.store_score})
+      </span>
+    </span>
+  );
+}
+
 function ScoreBadge({ score }: { score: number }) {
   const bg =
-    score >= 80 ? "bg-green-100 text-green-700" :
-    score >= 50 ? "bg-yellow-100 text-yellow-700" :
-    "bg-gray-100 text-gray-600";
+    score >= 80
+      ? "bg-green-100 text-green-700"
+      : score >= 50
+        ? "bg-yellow-100 text-yellow-700"
+        : "bg-gray-100 text-gray-600";
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${bg}`}>
+    <span
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${bg}`}
+    >
       {score}点
     </span>
   );
@@ -404,7 +378,7 @@ function StatusBadge({ status }: { status?: string }) {
   }
 }
 
-function ReceiptRow({
+function ReceiptCard({
   receipt,
   summary,
   isExpanded,
@@ -431,183 +405,130 @@ function ReceiptRow({
   ) => void;
   onBatchConfirm: () => void;
 }) {
-  // Track candidate selection per OCR item (for items with multiple candidates)
   const [selectedCandidates, setSelectedCandidates] = useState<
     Record<number, number>
   >({});
 
   return (
-    <>
-      <tr className="border-b border-gray-100 hover:bg-gray-50">
-        <td className="px-4 py-2">
-          <a
-            href={receipt.driveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            {receipt.fileName}
-          </a>
-        </td>
-        <td className="px-4 py-2 text-gray-600">{receipt.entityName}</td>
-        <td className="px-4 py-2 text-gray-600">
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      {/* Header row */}
+      <div
+        className="flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-gray-50"
+        onClick={onToggle}
+      >
+        <a
+          href={receipt.driveUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline text-sm font-medium"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {receipt.fileName}
+        </a>
+        <span className="text-xs text-gray-500">{receipt.entityName}</span>
+        <span className="text-xs text-gray-500">
           {receipt.scanDate.slice(0, 7)}
-        </td>
-        <td className="px-4 py-2">
-          {summary.total > 0 ? (
-            <span className="text-gray-700">{summary.total}件</span>
-          ) : (
-            <span className="text-gray-400">未登録</span>
-          )}
-        </td>
-        <td className="px-4 py-2">
-          {summary.total > 0 ? (
-            <div className="flex items-center gap-1.5 text-xs">
-              {summary.confirmed > 0 && (
-                <span className="text-green-600 font-medium">
-                  OK:{summary.confirmed}
-                </span>
-              )}
-              {summary.rejected > 0 && (
-                <span className="text-red-600 font-medium">
-                  NG:{summary.rejected}
-                </span>
-              )}
-              {summary.total - summary.confirmed - summary.rejected > 0 && (
-                <span className="text-gray-400">
-                  未:{summary.total - summary.confirmed - summary.rejected}
-                </span>
-              )}
-            </div>
-          ) : (
-            <span className="text-gray-400">-</span>
-          )}
-        </td>
-        <td className="px-4 py-2 space-x-2">
-          {summary.total > 0 && (
-            <>
-              <button
-                onClick={onToggle}
-                className="text-xs text-gray-600 hover:text-gray-900 underline"
-              >
-                {isExpanded ? "閉じる" : "詳細"}
-              </button>
-              <button
-                onClick={onMatch}
-                className="text-xs text-blue-600 hover:text-blue-800 underline"
-              >
-                突合実行
-              </button>
-            </>
-          )}
-        </td>
-      </tr>
-      {isExpanded && receipt.ocrResults && (
-        <tr>
-          <td colSpan={6} className="px-4 py-3 bg-gray-50">
-            {/* Batch confirm bar */}
-            {summary.pendingWithMatch > 0 && (
-              <div className="flex items-center gap-3 mb-3 bg-blue-50 border border-blue-200 rounded-md px-4 py-2">
-                <span className="text-sm text-blue-800">
-                  マッチ済み未確認: {summary.pendingWithMatch}件
-                </span>
-                <button
-                  onClick={onBatchConfirm}
-                  className="px-3 py-1 rounded text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
-                >
-                  全てOK
-                </button>
-              </div>
-            )}
+        </span>
 
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-gray-500">
-                  <th className="text-left py-1 pr-4">日付</th>
-                  <th className="text-left py-1 pr-4">店名</th>
-                  <th className="text-right py-1 pr-4">金額</th>
-                  <th className="text-left py-1 pr-4">突合先</th>
-                  <th className="text-left py-1 pr-4">ステータス</th>
-                  <th className="text-left py-1">操作</th>
-                </tr>
-              </thead>
-              <tbody>
+        {summary.total > 0 && (
+          <div className="flex items-center gap-1.5 text-xs ml-auto">
+            {summary.confirmed > 0 && (
+              <span className="text-green-600 font-medium">
+                OK:{summary.confirmed}
+              </span>
+            )}
+            {summary.rejected > 0 && (
+              <span className="text-red-600 font-medium">
+                NG:{summary.rejected}
+              </span>
+            )}
+            {summary.total - summary.confirmed - summary.rejected > 0 && (
+              <span className="text-gray-400">
+                未:{summary.total - summary.confirmed - summary.rejected}
+              </span>
+            )}
+            <span className="text-gray-300 mx-1">|</span>
+            <span className="text-gray-500">{summary.total}件</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          {summary.total > 0 && (
+            <button
+              onClick={onMatch}
+              className="text-xs text-blue-600 hover:text-blue-800 underline"
+            >
+              突合実行
+            </button>
+          )}
+          <span className="text-xs text-gray-400">
+            {isExpanded ? "▲" : "▼"}
+          </span>
+        </div>
+      </div>
+
+      {/* Expanded: Split view — PDF left, OCR items right */}
+      {isExpanded && receipt.ocrResults && (
+        <div className="border-t border-gray-200">
+          {/* Batch confirm bar */}
+          {summary.pendingWithMatch > 0 && (
+            <div className="flex items-center gap-3 mx-4 mt-3 bg-blue-50 border border-blue-200 rounded-md px-4 py-2">
+              <span className="text-sm text-blue-800">
+                マッチ済み未確認: {summary.pendingWithMatch}件
+              </span>
+              <button
+                onClick={onBatchConfirm}
+                className="px-3 py-1 rounded text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
+              >
+                全てOK
+              </button>
+            </div>
+          )}
+
+          <div className="flex gap-0 min-h-[400px]">
+            {/* Left: PDF Preview */}
+            <div className="w-2/5 border-r border-gray-200 p-3">
+              <iframe
+                src={`https://drive.google.com/file/d/${receipt.driveFileId}/preview`}
+                className="w-full h-full rounded border border-gray-200"
+                style={{ minHeight: "380px" }}
+                title={receipt.fileName}
+              />
+            </div>
+
+            {/* Right: OCR items + candidates */}
+            <div className="w-3/5 p-3 overflow-y-auto">
+              <div className="space-y-2">
                 {receipt.ocrResults.map((item, i) => {
-                  const hasCandidates =
-                    item.candidates && item.candidates.length > 1;
                   const selectedTxnId =
                     selectedCandidates[i] ?? item.matched_transaction_id;
+                  const hasCandidates =
+                    item.candidates && item.candidates.length > 0;
 
                   return (
-                    <tr key={i} className="border-t border-gray-200">
-                      <td className="py-1.5 pr-4">{item.date}</td>
-                      <td className="py-1.5 pr-4">{item.store}</td>
-                      <td className="py-1.5 pr-4 text-right tabular-nums">
-                        {Number(item.amount).toLocaleString()}円
-                      </td>
-                      <td className="py-1.5 pr-4">
-                        {item.candidates && item.candidates.length > 0 ? (
-                          hasCandidates ? (
-                            <div className="space-y-1">
-                              {item.candidates.map((c) => (
-                                <label
-                                  key={c.transaction_id}
-                                  className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer ${
-                                    selectedTxnId === c.transaction_id
-                                      ? "bg-blue-50"
-                                      : "hover:bg-gray-100"
-                                  }`}
-                                >
-                                  <input
-                                    type="radio"
-                                    name={`candidate-${receipt.id}-${i}`}
-                                    checked={selectedTxnId === c.transaction_id}
-                                    onChange={() =>
-                                      setSelectedCandidates((prev) => ({
-                                        ...prev,
-                                        [i]: c.transaction_id,
-                                      }))
-                                    }
-                                    className="accent-blue-600"
-                                  />
-                                  <span className="truncate max-w-48">
-                                    {c.date} {c.description}
-                                  </span>
-                                  <span className="tabular-nums whitespace-nowrap">
-                                    {Number(c.amount).toLocaleString()}円
-                                  </span>
-                                  <ScoreBadge score={c.score} />
-                                </label>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="truncate max-w-48">
-                                {item.candidates[0].date}{" "}
-                                {item.candidates[0].description}
-                              </span>
-                              <span className="tabular-nums whitespace-nowrap">
-                                {Number(
-                                  item.candidates[0].amount
-                                ).toLocaleString()}
-                                円
-                              </span>
-                              <ScoreBadge score={item.candidates[0].score} />
-                            </div>
-                          )
-                        ) : item.matched_transaction_id ? (
-                          <span className="text-gray-600">
-                            ID:{item.matched_transaction_id}
-                          </span>
-                        ) : (
-                          <span className="text-amber-600">未突合</span>
-                        )}
-                      </td>
-                      <td className="py-1.5 pr-4">
+                    <div
+                      key={i}
+                      className={`border rounded-lg p-3 text-xs ${
+                        item.status === "confirmed"
+                          ? "border-green-200 bg-green-50/50"
+                          : item.status === "rejected"
+                            ? "border-red-200 bg-red-50/30"
+                            : item.matched_transaction_id
+                              ? "border-blue-200 bg-blue-50/30"
+                              : "border-gray-200"
+                      }`}
+                    >
+                      {/* OCR result header */}
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="font-medium text-gray-900">
+                          {item.store}
+                        </span>
+                        <span className="tabular-nums font-medium">
+                          {Number(item.amount).toLocaleString()}円
+                        </span>
+                        <span className="text-gray-500">{item.date}</span>
                         <StatusBadge status={item.status} />
-                      </td>
-                      <td className="py-1.5">
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 ml-auto">
                           {item.status !== "confirmed" && (
                             <button
                               onClick={() =>
@@ -620,7 +541,7 @@ function ReceiptRow({
                               disabled={
                                 !item.matched_transaction_id && !selectedTxnId
                               }
-                              className="px-2 py-0.5 rounded text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="px-2 py-0.5 rounded font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               OK
                             </button>
@@ -628,21 +549,71 @@ function ReceiptRow({
                           {item.status !== "rejected" && (
                             <button
                               onClick={() => onConfirm(i, "rejected")}
-                              className="px-2 py-0.5 rounded text-xs font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
+                              className="px-2 py-0.5 rounded font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
                             >
                               NG
                             </button>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+
+                      {/* Candidates */}
+                      {hasCandidates ? (
+                        <div className="space-y-1 ml-2">
+                          {item.candidates!.map((c) => (
+                            <label
+                              key={c.transaction_id}
+                              className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer ${
+                                selectedTxnId === c.transaction_id
+                                  ? "bg-blue-100/70 border border-blue-300"
+                                  : "hover:bg-gray-100 border border-transparent"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name={`candidate-${receipt.id}-${i}`}
+                                checked={selectedTxnId === c.transaction_id}
+                                onChange={() =>
+                                  setSelectedCandidates((prev) => ({
+                                    ...prev,
+                                    [i]: c.transaction_id,
+                                  }))
+                                }
+                                className="accent-blue-600"
+                              />
+                              <span className="text-gray-500">{c.date}</span>
+                              <span className="truncate max-w-52 text-gray-800">
+                                {c.description}
+                              </span>
+                              <span className="tabular-nums whitespace-nowrap font-medium">
+                                {Number(c.amount).toLocaleString()}円
+                              </span>
+                              <span className="text-gray-400 text-[10px]">
+                                {c.account_name}
+                              </span>
+                              <span className="ml-auto">
+                                <ScoreBreakdown c={c} />
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : item.matched_transaction_id ? (
+                        <p className="text-gray-500 ml-2">
+                          ID:{item.matched_transaction_id}
+                        </p>
+                      ) : (
+                        <p className="text-amber-600 ml-2">
+                          候補なし — 現金払い？
+                        </p>
+                      )}
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
-          </td>
-        </tr>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-    </>
+    </div>
   );
 }

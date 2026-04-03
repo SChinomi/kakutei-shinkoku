@@ -6,6 +6,9 @@ import { eq, and, sql, gte, lte } from "drizzle-orm";
 interface MatchCandidate {
   transaction_id: number;
   score: number;
+  date_score: number;
+  amount_score: number;
+  store_score: number;
   date: string;
   description: string;
   amount: string;
@@ -157,6 +160,9 @@ export async function POST(
         return {
           transaction_id: row.id,
           score: dateScore + amountScore + storeScore,
+          date_score: dateScore,
+          amount_score: amountScore,
+          store_score: storeScore,
           date: row.date,
           description: row.description,
           amount: row.amount,
