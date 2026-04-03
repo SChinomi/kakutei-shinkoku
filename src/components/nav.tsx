@@ -7,6 +7,7 @@ const links = [
   { href: "/", label: "ダッシュボード" },
   { href: "/transactions", label: "明細" },
   { href: "/receipts", label: "レシート" },
+  { href: "/journal", label: "仕訳" },
   { href: "/upload", label: "アップロード" },
   { href: "/settings", label: "設定" },
 ];

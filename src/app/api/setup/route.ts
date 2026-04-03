@@ -58,6 +58,20 @@ export async function POST() {
     ON transactions (account_id, date, description, amount)
   `);
 
+  // Add receipt_id and receipt_type columns if not exists (migration)
+  await db.execute(sql`
+    DO $$ BEGIN
+      ALTER TABLE transactions ADD COLUMN receipt_id INTEGER REFERENCES receipts(id);
+    EXCEPTION WHEN duplicate_column THEN NULL;
+    END $$
+  `);
+  await db.execute(sql`
+    DO $$ BEGIN
+      ALTER TABLE transactions ADD COLUMN receipt_type TEXT;
+    EXCEPTION WHEN duplicate_column THEN NULL;
+    END $$
+  `);
+
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS receipts (
       id SERIAL PRIMARY KEY,

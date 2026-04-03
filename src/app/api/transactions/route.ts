@@ -57,6 +57,8 @@ export async function GET(request: NextRequest) {
         memo: transactions.memo,
         category: transactions.category,
         isPersonal: transactions.isPersonal,
+        receiptType: transactions.receiptType,
+        receiptId: transactions.receiptId,
       })
       .from(transactions)
       .innerJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -95,11 +97,12 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { ids, memo, isPersonal, category } = body as {
+  const { ids, memo, isPersonal, category, receiptType } = body as {
     ids: number[];
     memo?: string;
     isPersonal?: boolean;
     category?: string;
+    receiptType?: string | null;
   };
 
   if (!ids || ids.length === 0) {
@@ -115,6 +118,7 @@ export async function PATCH(request: NextRequest) {
   if (memo !== undefined) updates.memo = memo;
   if (isPersonal !== undefined) updates.isPersonal = isPersonal;
   if (category !== undefined) updates.category = category;
+  if (receiptType !== undefined) updates.receiptType = receiptType;
 
   const updated = await db
     .update(transactions)

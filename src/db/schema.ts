@@ -51,6 +51,9 @@ export const transactions = pgTable(
     memo: text("memo"), // 店主貸、事業経費、等
     category: text("category"), // 勘定科目（将来用）
     isPersonal: boolean("is_personal").default(false).notNull(), // 店主貸フラグ
+    // レシート紐付け
+    receiptId: integer("receipt_id").references(() => receipts.id), // 確認済みレシートのID
+    receiptType: text("receipt_type"), // "scanned" | "digital" | null(未整理)
     // メタデータ
     rawData: text("raw_data"), // 元CSV行（原本保持）
     uploadBatchId: text("upload_batch_id"), // どのアップロードで入ったか
